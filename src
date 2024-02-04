@@ -1,0 +1,104 @@
+import os
+import re
+
+class FileExplorer:
+    def __init__(self):
+        self.cwd = os.getcwd()
+        self.page = 1
+        self.results_per_page = 10
+        self.search_results = []
+        self.search_query = ''
+
+    def display_cwd(self):
+        print(f"Current working directory: {self.cwd}")
+
+    def change_directory(self, path):
+        try:
+            os.chdir(path)
+            self.cwd = os.getcwd()
+            self.display_cwd()
+        except FileNotFoundError:
+            print("Invalid path. Please try again.")
+
+    def list_directory(self):
+        self.display_cwd()
+        files = sorted(os.listdir(), key=str.lower)
+        for file in files:
+            size = os.path.getsize(file)
+            print(f"{file} ({size} bytes)")
+
+    def search_files(self, query):
+        self.search_query = query
+        self.search_results = self.find_files(query)
+        self.display_search_results()
+
+    def find_files(self, query):
+        results = []
+        for root, dirs, files in os.walk('.'):
+            for file in files:
+                if query.lower() in file.lower():
+                    results.append(os.path.join(root, file))
+        return results
+
+    def display_search_results(self):
+        if not self.search_results:
+            print("No results found.")
+            return
+        start = (self.page - 1) * self.results_per_page
+        end = start + self.results_per_page
+        for i, result in enumerate(self.search_results[start:end], start=1):
+            print(f"{i}. {result}")
+        print(f"Page {self.page} of {self.get_total_pages()}")
+
+    def get_total_pages(self):
+        return (len(self.search_results) + self.results_per_page - 1) // self.results_per_page
+
+    def navigate_to_directory(self, path):
+        self.change_directory(path)
+        self.list_directory()
+
+    def find_lipogram(self):
+        lipogram_files = []
+        for root, dirs, files in os.walk('.'):
+            for file in files:
+                with open(os.path.join(root, file), 'r') as f:
+                    content = f.read()
+                    if 'E' not in content:
+                        lipogram_files.append(os.path.join(root, file))
+        lipogram_files.sort(key=lambda x: self.count_e(x))
+        for file in lipogram_files:
+            print(f"{file} ({self.count_e(file)} occurrences of 'E')")
+
+    def count_e(self, file):
+        with open(file, 'r') as f:
+            content = f.read()
+            return content.count('E')
+
+    def run(self):
+        while True:
+            print("\nCommands:")
+            print("1. View directory contents")
+            print("2. Change directory")
+            print("3. Search for a file")
+            print("4. Navigate to a directory")
+            print("5. Find lipogram files")
+            print("6. Exit")
+            choice = input("Enter the number of your choice: ")
+            if choice == '1':
+                self.list_directory()
+            elif choice == '2':
+                path = input("Enter the path to change to: ")
+                self.change_directory(path)
+            elif choice == '3':
+                query = input("Enter the search query: ")
+                self.search_files(query)
+            elif choice == '4':
+                path = input("Enter the path to navigate to: ")
+                self.navigate_to_directory(path)
+            elif choice == '5':
+                self.find_lipogram()
+            elif choice == '6':
+                break
+            else:
+                print("Invalid.")
+
